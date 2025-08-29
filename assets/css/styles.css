@@ -1,0 +1,87 @@
+    :root {
+      --bg: #ffffff;
+      --ink: #111111;
+      --muted: #555;
+      --accent: #e63946;
+      --radius: 16px;
+      --shadow: 0 4px 12px rgba(0,0,0,0.05);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Montserrat', sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      line-height: 1.6;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+    }
+    header { text-align: center; margin-bottom: 20px; }
+    h1 {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 38px;
+      letter-spacing: 1px;
+      margin-bottom: 10px;
+    }
+    h1 .black { color: var(--ink); }
+    h1 .accent { color: var(--accent); }
+    .streak {
+      font-size: 18px;
+      margin-bottom: 15px;
+      font-weight: 600;
+      color: var(--accent);
+      background: #fff;
+      padding: 10px 18px;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      display: inline-block;
+    }
+    .btns { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-bottom: 20px; }
+    button {
+      cursor: pointer;
+      border: none;
+      border-radius: var(--radius);
+      padding: 10px 16px;
+      font-weight: 600;
+      font-family: 'Montserrat', sans-serif;
+      background: var(--accent);
+      color: #fff;
+      transition: all 0.2s ease;
+      box-shadow: var(--shadow);
+    }
+    button:hover { transform: scale(1.05); }
+    button.secondary { background: #f5f5f5; color: var(--ink); }
+    .meta { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; margin-bottom: 20px; }
+    .kpi {
+      padding: 12px 18px;
+      border-radius: var(--radius);
+      border: 1px solid #eee;
+      text-align: center;
+      background: #fff;
+      box-shadow: var(--shadow);
+    }
+    .kpi b { display: block; font-size: 16px; margin-top: 4px; }
+    table {
+      border-collapse: collapse;
+      margin: 0 auto;
+      width: 100%;
+      max-width: 700px;
+      background: #fff;
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+    th, td {
+      padding: 14px 16px;
+      text-align: left;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    th {
+      background: #fafafa;
+      font-weight: 700;
+      font-family: 'Montserrat', sans-serif;
+    }
+    td:last-child, th:last-child { text-align: right; }
+    .note { font-size: 13px; color: var(--muted); margin-top: 20px; text-align: center; max-width: 600px; }

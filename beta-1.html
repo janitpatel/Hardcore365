@@ -1,0 +1,436 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Janit’s Hardcore Fitness System 💪🔥🍎</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#ffffff; --ink:#111; --muted:#646b74; --accent:#e63946;
+    --radius:14px; --shadow:0 8px 20px rgba(16,24,40,.06);
+    --card-bg:#fff;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:'Montserrat',sans-serif; background:var(--bg); color:var(--ink);
+    -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
+    display:flex; align-items:flex-start; justify-content:center; padding:28px;
+  }
+  .container{width:100%;max-width:1000px;}
+  header{display:flex;flex-direction:column;align-items:center;gap:12px;margin-bottom:18px}
+  h1{font-family:'Bebas Neue',sans-serif;font-size:40px;line-height:1}
+  h1 .black{color:var(--ink)}
+  h1 .accent{color:var(--accent)}
+  .top-row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+  .streak{background:var(--card-bg);padding:10px 16px;border-radius:12px;box-shadow:var(--shadow);font-weight:700;color:var(--accent)}
+  .kpis{display:flex;gap:12px;align-items:center}
+  .kpi{background:var(--card-bg);padding:10px 14px;border-radius:12px;box-shadow:var(--shadow);text-align:center;min-width:100px}
+  .kpi small{display:block;color:var(--muted);font-size:12px}
+  .kpi b{display:block;font-size:16px;margin-top:6px}
+
+  .controls{display:flex;gap:10px;justify-content:center;margin:14px 0 20px 0;flex-wrap:wrap}
+  .btn{background:var(--accent);color:white;border:none;padding:10px 14px;border-radius:12px;cursor:pointer;font-weight:700;box-shadow:var(--shadow);transition:transform .12s}
+  .btn.secondary{background:#f5f6f8;color:var(--ink)}
+  .btn:hover{transform:scale(1.03)}
+
+  /* layout cards */
+  .layout{display:grid;grid-template-columns:1fr;gap:18px;align-items:start;justify-items:center}
+  @media(min-width:880px){ .layout{grid-template-columns:1fr 420px} }
+
+  .card{width:100%;background:var(--card-bg);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px}
+  .card h3{font-size:16px;margin-bottom:10px}
+  /* workout table */
+  table{width:100%;border-collapse:collapse;font-size:15px}
+  th,td{padding:10px 8px;border-bottom:1px solid #f2f3f5}
+  th{background:#fbfbfb;text-align:left;font-weight:700}
+  td.right{text-align:right;color:var(--muted)}
+
+  /* diet list */
+  .diet-list{display:flex;flex-direction:column;gap:8px}
+  .diet-item{display:flex;gap:10px;align-items:flex-start}
+  .icon{width:36px;height:36px;border-radius:10px;background:#fff;border:1px solid #f0f0f0;display:flex;align-items:center;justify-content:center;color:var(--accent);font-weight:700;box-shadow:var(--shadow)}
+  .diet-text small{color:var(--muted);font-size:13px}
+  .done-row{display:flex;gap:8px;margin-top:12px;align-items:center}
+  .done-btn{flex:1;padding:10px;border-radius:12px;border:1px solid #eee;background:#fff;cursor:pointer}
+  .done-btn.active{background:linear-gradient(90deg,var(--accent),#ff586f);color:#fff;border:none;box-shadow:var(--shadow)}
+  .status{font-size:13px;color:var(--muted);margin-left:8px}
+
+  .footer-note{margin-top:14px;color:var(--muted);font-size:13px;text-align:center}
+</style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1><span class="black">Janit’s Hardcore</span> <span class="accent">Fitness System 💪🔥🍎</span></h1>
+
+      <div class="top-row">
+        <div id="streak" class="streak">🔥 Streak: 0 Days</div>
+        <div class="kpis" id="kpis"></div>
+      </div>
+
+      <div class="controls">
+        <button id="prevBtn" class="btn secondary">◀ Prev</button>
+        <button id="nextBtn" class="btn secondary">Next ▶</button>
+        <button id="exportBtn" class="btn">⬇ Export Today</button>
+      </div>
+    </header>
+
+    <main class="layout">
+      <!-- Workout card (left on wide screens) -->
+      <section class="card" id="workoutCard" aria-live="polite">
+        <h3>Workout of the Day</h3>
+        <div id="workoutTableWrap"></div>
+
+        <div class="done-row">
+          <button id="workoutDone" class="done-btn">Mark Workout Done ✅</button>
+          <div id="workoutStatus" class="status">Not done</div>
+        </div>
+      </section>
+
+      <!-- Diet card (right on wide screens) -->
+      <aside class="card" id="dietCard" aria-live="polite">
+        <h3>Diet Plan 🍎</h3>
+        <div class="diet-list" id="dietList"></div>
+
+        <div class="done-row">
+          <button id="dietDone" class="done-btn">Mark Diet Done ✅</button>
+          <div id="dietStatus" class="status">Not done</div>
+        </div>
+      </aside>
+    </main>
+
+    <div class="footer-note">Auto-progressive workout from <strong>30 Aug 2025</strong>. Workouts scale 0.2% daily; intensity = 3× base.</div>
+  </div>
+
+<script>
+/* ------------------------
+   Config & Data
+   ------------------------ */
+const START_DATE_ISO = '2025-08-30';       // Day 1
+const DAILY_GROWTH = 0.002;               // 0.2% per day
+const INTENSITY_LEVEL = 1;                
+const DELOAD_FACTOR = 0.8;                // every 56th day apply deload (optional)
+const STORAGE_KEY = 'janit_fitness_v1';   // single storage object
+
+// Weekly workout split (3x intensity base numbers)
+const WEEKLY = {
+  Monday: [
+    {name:'Push-ups', sets:4, reps:20},
+    {name:'Diamond Push-ups', sets:3, reps:15},
+    {name:'Pike Push-ups', sets:3, reps:15},
+    {name:'Chair Dips', sets:3, reps:15},
+    {name:'Plank Shoulder Taps', sets:3, reps:20}
+  ],
+  Tuesday: [
+    {name:'Squats', sets:4, reps:20},
+    {name:'Jump Squats', sets:3, reps:15},
+    {name:'Lunges (each leg)', sets:3, reps:12},
+    {name:'Glute Bridges', sets:3, reps:20},
+    {name:'Calf Raises', sets:4, reps:20}
+  ],
+  Wednesday: [
+    {name:'Crunches', sets:4, reps:20},
+    {name:'Leg Raises', sets:4, reps:15},
+    {name:'Mountain Climbers', sets:3, reps:30, unit:'sec'},
+    {name:'Plank', sets:3, reps:60, unit:'sec'},
+    {name:'Russian Twists', sets:3, reps:20}
+  ],
+  Thursday: [
+    {name:'Jumping Jacks', sets:3, reps:50},
+    {name:'High Knees', sets:3, reps:40, unit:'sec'},
+    {name:'Burpees', sets:4, reps:12},
+    {name:'Skater Jumps', sets:3, reps:20},
+    {name:'Plank Jacks', sets:3, reps:30, unit:'sec'}
+  ],
+  Friday: [
+    {name:'Push-ups', sets:3, reps:20},
+    {name:'Squats', sets:3, reps:20},
+    {name:'Burpees', sets:3, reps:15},
+    {name:'Plank', sets:3, reps:60, unit:'sec'},
+    {name:'Mountain Climbers', sets:3, reps:30, unit:'sec'}
+  ],
+  Saturday: [
+    {name:'Yoga / Stretching', sets:1, reps:20, unit:'min'},
+    {name:'Light Walking', sets:1, reps:30, unit:'min'},
+    {name:'Skipping Rope', sets:1, reps:20, unit:'min'}
+  ],
+  Sunday: [
+    {name:'Rest & Recovery', sets:1, reps:1, unit:'day'}
+  ]
+};
+
+// Diet (fixed daily as you provided)
+const DIET = [
+  {icon:'🌅', title:'Morning', text:'1 glass warm water with lemon'},
+  {icon:'🍳', title:'Breakfast (Mess / Outside)', text:'Option A (Mess) — choose wisely; Option B (Outside) — 1 glass milk + Bournvita OR curd + 1 banana OR roasted chana + peanuts'},
+  {icon:'🕛', title:'Lunch', text:'2 cups sabzi, 2–3 chapatis, ½ cup rice, 1 cup dal'},
+  {icon:'☕', title:'Evening Snack', text:'1 apple/banana/orange, green tea, roasted chana'},
+  {icon:'🍲', title:'Dinner', text:'Keep it light (light sabzi + 1–2 chapatis)'},
+  {icon:'🌙', title:'Before Bed', text:'Handful roasted chana, 1 glass warm water, green tea'}
+];
+
+/* ------------------------
+   Helper functions
+   ------------------------ */
+function toISODate(d){ // local date iso (yyyy-mm-dd)
+  const z = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  return z.toISOString().slice(0,10);
+}
+function daysBetween(startISO, date){
+  const s = new Date(startISO + 'T00:00:00');
+  const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  return Math.floor((d - s)/(1000*60*60*24));
+}
+function weekdayName(date){
+  return date.toLocaleDateString('en-US',{weekday:'long'});
+}
+function clamp(v,min,max){ return Math.max(min,Math.min(max,v)); }
+
+/* ------------------------
+   Storage: single object
+   structure:
+   {
+     completions: { '2025-09-02': {workout:true,diet:true} , ... },
+     streak: { count: N, lastCounted: '2025-09-02', longest: M }
+   }
+------------------------ */
+function loadState(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return {completions:{}, streak:{count:0,lastCounted:null,longest:0}};
+    return JSON.parse(raw);
+  }catch(e){
+    return {completions:{}, streak:{count:0,lastCounted:null,longest:0}};
+  }
+}
+function saveState(state){ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+
+/* ------------------------
+   Workout generation & scaling
+   ------------------------ */
+function getDayIndex(viewDate){
+  return Math.max(0, daysBetween(START_DATE_ISO, viewDate));
+}
+function scaledReps(base, dayIndex){
+  // multiplier = (1+growth)^(dayIndex) * level
+  const mult = Math.pow(1 + DAILY_GROWTH, dayIndex) * INTENSITY_LEVEL;
+  return Math.max(1, Math.round(base * mult));
+}
+function getWorkoutForDate(viewDate){
+  const dayIndex = getDayIndex(viewDate); // 0-based
+  const weekday = weekdayName(viewDate);
+  const basePlan = WEEKLY[weekday] || [];
+  // map and scale
+  return basePlan.map(ex => {
+    const isTime = ex.unit && (ex.unit==='sec' || ex.unit==='min' || ex.unit==='day');
+    const repsBase = ex.reps || 1;
+    let reps = isTime ? Math.round(repsBase * Math.pow(1+DAILY_GROWTH, dayIndex) * INTENSITY_LEVEL) : scaledReps(repsBase, dayIndex);
+    // round time to sensible values
+    if(isTime && ex.unit==='sec') reps = Math.max(10, Math.round(reps/5)*5);
+    if(isTime && ex.unit==='min') reps = Math.max(1, Math.round(reps));
+    // optional deload week every 56 days (last 7 days of each 56-day block)
+    const inBlockDay = dayIndex % 56;
+    const isDeload = inBlockDay >= 49 && inBlockDay <= 55;
+    if(isDeload) reps = Math.round(reps * DELOAD_FACTOR);
+    return {...ex, reps};
+  });
+}
+
+/* ------------------------
+   UI rendering
+   ------------------------ */
+const state = loadState();
+let viewDate = new Date(); // start showing today's device date
+
+const el = {
+  streak: document.getElementById('streak'),
+  kpis: document.getElementById('kpis'),
+  workoutTableWrap: document.getElementById('workoutTableWrap'),
+  dietList: document.getElementById('dietList'),
+  workoutDoneBtn: document.getElementById('workoutDone'),
+  dietDoneBtn: document.getElementById('dietDone'),
+  workoutStatus: document.getElementById('workoutStatus'),
+  dietStatus: document.getElementById('dietStatus'),
+  prevBtn: document.getElementById('prevBtn'),
+  nextBtn: document.getElementById('nextBtn'),
+  exportBtn: document.getElementById('exportBtn'),
+  kpisWrap: document.getElementById('kpis')
+};
+
+function formatDateLong(d){
+  return `${weekdayName(d)} • ${d.toDateString()}`;
+}
+
+function renderKPIs(viewDate){
+  const dayIndex = getDayIndex(viewDate);
+  el.kpis.innerHTML = '';
+  const kpiElems = [
+    {label:'Day', value: dayIndex + 1},
+    {label:'Date', value: toISODate(viewDate)},
+    {label:'Progress', value: ((Math.min(730, dayIndex+1)/730)*100).toFixed(1) + '%'}
+  ];
+  kpiElems.forEach(k=>{
+    const div = document.createElement('div');
+    div.className = 'kpi';
+    div.innerHTML = `<small>${k.label}</small><b>${k.value}</b>`;
+    el.kpis.appendChild(div);
+  });
+}
+
+function renderWorkoutCard(viewDate){
+  const plan = getWorkoutForDate(viewDate);
+  const tbl = document.createElement('table');
+  tbl.innerHTML = `<thead><tr><th colspan="2">${formatDateLong(viewDate)}</th></tr><tr><th>Exercise</th><th style="text-align:right">Sets × Reps</th></tr></thead>`;
+  const tbody = document.createElement('tbody');
+  plan.forEach(ex=>{
+    const u = ex.unit ? ' '+ex.unit : ' reps';
+    const row = document.createElement('tr');
+    row.innerHTML = `<td>${ex.name}</td><td class="right">${ex.sets} × ${ex.reps}${u}</td>`;
+    tbody.appendChild(row);
+  });
+  tbl.appendChild(tbody);
+  el.workoutTableWrap.innerHTML = '';
+  el.workoutTableWrap.appendChild(tbl);
+}
+
+function renderDietCard(){
+  el.dietList.innerHTML = '';
+  DIET.forEach(item=>{
+    const wrap = document.createElement('div');
+    wrap.className = 'diet-item';
+    wrap.innerHTML = `<div class="icon">${item.icon}</div><div class="diet-text"><strong>${item.title}</strong><div><small>${item.text}</small></div></div>`;
+    el.dietList.appendChild(wrap);
+  });
+}
+
+function getIsoTodayForView(){
+  return toISODate(viewDate);
+}
+
+function getCompletionForDate(isoDate){
+  return state.completions[isoDate] || {workout:false, diet:false};
+}
+function setCompletionForDate(isoDate, part, value){
+  state.completions[isoDate] = state.completions[isoDate] || {workout:false,diet:false};
+  state.completions[isoDate][part] = value;
+  saveState(state);
+}
+
+/* streak logic:
+   - streak.count increments when BOTH workout & diet are true for a date and that date wasn't counted before
+   - if lastCounted is yesterday -> increment, else reset to 1
+   - track longest
+*/
+function tryUpdateStreakIfBothDone(isoDate){
+  const comp = getCompletionForDate(isoDate);
+  if(!(comp.workout && comp.diet)) return; // require both
+  // if already counted for this day
+  if(state.streak.lastCounted === isoDate) return;
+  // check previous counted day
+  if(state.streak.lastCounted){
+    const last = new Date(state.streak.lastCounted + 'T00:00:00');
+    const today = new Date(isoDate + 'T00:00:00');
+    const diff = Math.floor((today - last)/(1000*60*60*24));
+    if(diff === 1){
+      state.streak.count = (state.streak.count || 0) + 1;
+    } else {
+      state.streak.count = 1;
+    }
+  } else {
+    state.streak.count = 1;
+  }
+  state.streak.lastCounted = isoDate;
+  state.streak.longest = Math.max(state.streak.longest || 0, state.streak.count);
+  saveState(state);
+}
+
+function renderStreak(){
+  el.streak.textContent = `🔥 Streak: ${state.streak.count || 0} Days`;
+}
+
+/* update UI for done buttons & statuses */
+function refreshCompletionUI(){
+  const iso = getIsoTodayForView();
+  const comp = getCompletionForDate(iso);
+  // set button styles
+  el.workoutDoneBtn.classList.toggle('active', !!comp.workout);
+  el.dietDoneBtn.classList.toggle('active', !!comp.diet);
+  el.workoutStatus.textContent = comp.workout ? 'Done' : 'Not done';
+  el.dietStatus.textContent = comp.diet ? 'Done' : 'Not done';
+}
+
+/* render everything */
+function renderAll(){
+  renderKPIs(viewDate);
+  renderWorkoutCard(viewDate);
+  renderDietCard();
+  refreshCompletionUI();
+  renderStreak();
+}
+
+/* ------------------------
+   User interactions
+   ------------------------ */
+el.prevBtn.addEventListener('click', ()=>{
+  viewDate.setDate(viewDate.getDate() - 1);
+  renderAll();
+});
+el.nextBtn.addEventListener('click', ()=>{
+  viewDate.setDate(viewDate.getDate() + 1);
+  renderAll();
+});
+
+el.workoutDoneBtn.addEventListener('click', ()=>{
+  const iso = getIsoTodayForView();
+  const current = getCompletionForDate(iso);
+  setCompletionForDate(iso, 'workout', !current.workout);
+  // if both done and not counted, update streak
+  tryUpdateStreakIfBothDone(iso);
+  renderAll();
+});
+el.dietDoneBtn.addEventListener('click', ()=>{
+  const iso = getIsoTodayForView();
+  const current = getCompletionForDate(iso);
+  setCompletionForDate(iso, 'diet', !current.diet);
+  tryUpdateStreakIfBothDone(iso);
+  renderAll();
+});
+
+el.exportBtn.addEventListener('click', ()=>{
+  const iso = getIsoTodayForView();
+  const workout = getWorkoutForDate(viewDate);
+  const comp = getCompletionForDate(iso);
+  const lines = [`Janit’s Hardcore Fitness System — Day ${getDayIndex(viewDate)+1} • ${iso}`, '', 'WORKOUT:'];
+  workout.forEach(e=> lines.push(`- ${e.name} : ${e.sets} × ${e.reps}${e.unit ? ' '+e.unit : ' reps'}`));
+  lines.push('', 'DIET:');
+  DIET.forEach(d=> lines.push(`- ${d.title} : ${d.text}`));
+  lines.push('', `Completed Today - Workout: ${comp.workout ? 'YES' : 'NO'}, Diet: ${comp.diet ? 'YES' : 'NO'}`);
+  const blob = new Blob([lines.join('\n')], {type:'text/plain'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = `Janit_Workout_Day${getDayIndex(viewDate)+1}_${iso}.txt`;
+  a.click();
+});
+
+/* ------------------------
+   Init on load: try auto-count previous day if both were done but not counted?
+   We'll not auto-backfill — only count when user marks both done (explicit).
+   However to maintain earlier request for 'system' which auto-detects date:
+   If both workout+diet are true in storage for today's iso and streak not yet counted -> we count it now.
+*/
+(function init(){
+  // ensure state shape
+  if(!state.completions) state.completions = {};
+  if(!state.streak) state.streak = {count:0,lastCounted:null,longest:0};
+  // if today's completions already both true and not counted, count now
+  const todayIso = toISODate(new Date());
+  const todayComp = state.completions[todayIso] || {};
+  if(todayComp.workout && todayComp.diet && state.streak.lastCounted !== todayIso){
+    tryUpdateStreakIfBothDone(todayIso);
+  }
+  renderAll();
+})();
+</script>
+</body>
+</html>
